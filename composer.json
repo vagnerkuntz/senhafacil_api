@@ -1,0 +1,6 @@
+{
+    "require": {
+        "phpgangsta/googleauthenticator": "dev-master",
+        "firebase/php-jwt": "^5.3"
+    }
+}
