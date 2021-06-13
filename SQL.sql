@@ -7,6 +7,7 @@ CREATE TABLE `users` (
     `name` varchar(255) NOT NULL,
     `email` varchar(255) NOT NULL,
     `password` varchar(255) NOT NULL,
+    `qrcode` tinyint(1) NULL DEFAULT 0,
     PRIMARY KEY(`id`)
 );
 ALTER TABLE `users` ADD `secret_mfa` varchar(255) NOT NULL;
