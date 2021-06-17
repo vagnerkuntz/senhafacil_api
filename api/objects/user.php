@@ -15,6 +15,29 @@ class User {
     public function __construct($db) {
         $this->conn = $db;
     }
+
+    // retorna a senha para comparar no login
+    function emailExists() {
+        $query = "SELECT `id`, `email`, `password`, `secret_mfa`, `name`, `qrcode` FROM " . $this->table_name . " WHERE email = :email";
+        $stmt = $this->conn->prepare($query);
+    
+        $stmt->bindParam(':email', $this->email);
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0) {
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            $this->id = $row['id'];
+            $this->password = $row['password'];
+            $this->secret_mfa = $row['secret_mfa'];
+            $this->name = $row['name'];
+            $this->qrcode = $row['qrcode'];
+    
+            return true;
+        }
+    
+        return false;
+    }
  
     function create() {
         if ($this->emailExists()) {
@@ -22,9 +45,8 @@ class User {
         }
 
         require '../vendor/autoload.php';
-
         $authenticator = new PHPGangsta_GoogleAuthenticator();
-        $secret = $authenticator->createSecret();
+        $this->secret_mfa = $authenticator->createSecret();
 
         $query = "INSERT INTO " . $this->table_name . " SET name = :name, email = :email, password = :password, secret_mfa = :secret_mfa";
         $stmt = $this->conn->prepare($query);
@@ -43,40 +65,12 @@ class User {
         return false;
     }
     
-    function emailExists() { // retorna a senha para comparar no login
-        $query = "SELECT `id`, `password`, `secret_mfa`, `name`, `qrcode` FROM " . $this->table_name . " WHERE email = ? LIMIT 0, 1";
-        $stmt = $this->conn->prepare( $query );
-    
-        $stmt->bindParam(1, $this->email);
-        $stmt->execute();
-
-        if ($stmt->rowCount() > 0) {
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $this->id = $row['id'];
-            $this->password = $row['password'];
-            $this->secret_mfa = $row['secret_mfa'];
-            $this->name = $row['name'];
-            $this->qrcode = $row['qrcode'];
-    
-            return true;
-        }
-    
-        return false;
-    }
- 
     public function update() {
         $password_set = !empty($this->password) ? ", password = :password" : "";
     
         $query = "UPDATE " . $this->table_name . " SET qrcode = :qrcode, firstname = :firstname, lastname = :lastname, email = :email {$password_set} WHERE id = :id";
     
         $stmt = $this->conn->prepare($query);
-
-        // bind the values from the form
-        $stmt->bindParam(':firstname', $this->firstname);
-        $stmt->bindParam(':lastname', $this->lastname);
-        $stmt->bindParam(':email', $this->email);
-        $stmt->bindParam(':qrcode', $this->qrcode);
 
         // hash the password before saving to database
         if(!empty($this->password)){
